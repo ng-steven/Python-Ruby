@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/html">
+    <head>
+        <!-- Jquery is included here and available for use -->
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+        <!-- some basic styles for game setup -->
+        <style>
+            .center {
+                margin: auto;
+                width: 50%;
+                padding: 50px;
+            }
+
+            .message {
+                height: 55px;
+                font-size: 18px;
+                text-shadow: 0 1px 0 #ccc,
+                    0 2px 0 #c9c9c9,
+                    0 3px 0 #bbb,
+                    0 4px 0 #b9b9b9,
+                    0 5px 0 #aaa,
+                    0 6px 1px rgba(0,0,0,.1),
+                    0 0 5px rgba(0,0,0,.1),
+                    0 1px 3px rgba(0,0,0,.3),
+                    0 3px 5px rgba(0,0,0,.2),
+                    0 5px 10px rgba(0,0,0,.25),
+                    0 10px 10px rgba(0,0,0,.2),
+                    0 20px 20px rgba(0,0,0,.15);
+            }
+
+            .viewport {
+                height: 500px;
+                width: 500px;
+                border: 1px solid black;
+                margin-bottom: 10px;
+                display: none;
+            }
+            .row {
+                display: table-row;
+            }
+            .game-space {
+                border: 1px dotted gray;
+                width: 50px;
+                height: 50px;
+                display: table-cell;
+            }
+            .ruby {
+                background-image: url(ruby.png);
+                background-repeat: no-repeat;
+                background-size: 40px 25px;
+                background-position: 4px 14px;
+            }
+
+            #close_window {
+                float: right;
+            }
+
+            button {
+                min-width: 85px;
+                height: 35px;
+                background-color: #00bfff;
+                border: solid 1px #2266ff;
+                border-radius: 5px;
+            }
+
+        </style>
+    </head>
+    <body class="center">
+        <table>
+            <tr>
+                <td align="center">
+                    <div class="message"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button id="start_game" type="button">Start Game</button>
+                    <button id="start_over" type="button">Start Over</button>
+                    <button id="close_window" type="button">Quit</button>
+                    <br /><br />
+                    <div class="viewport"></div>
+                    <br />
+                    <div class="form">
+                        <!-- File picker will only work with modern browsers! -->
+                        <input type="file" name="file" />
+                        <input type="button" value="Upload" />
+                    </div>
+
+                    <br />
+
+                    <span id="displayCounter"></span>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>
+
+<script>
+//Render function is provided to draw the game board
+$(document).ready(function() {
+
+    $('.message').html('You have 5 sec to help <b>Python</b> catch <b>Ruby</b> by arrow keys');
+    $('#start_over').hide();
+    $('.form').hide();
+
+    $('#start_game').on('click', function(){
+        var i,j;
+        $('.message').css({'font-size':'18px', 'color':'black'});
+        $('.message').html('You have 5 sec to help <b>Python</b> catch <b>Ruby</b> by arrow keys');
+        $('.form').remove();
+
+        var render = function() {
+            $('.viewport').css('display', 'table');
+            var html = "";
+            for(i=0; i<10; i++) {
+                html += "<div class='row'>";
+                for(j=0; j<10; j++) {
+                    html += "<div class='game-space' id="+i+""+j+">";
+                    if(i === 0 && j === 0 && $('#start_game').text() === 'Start Game') {
+                        html += "<img src='python.png' height=45 width=45>";
+                    }
+                    html += "</div>";
+                }
+                html += "</div>";
+            }
+            $('.viewport').html(html);
+
+            if ( $('#start_game').text() === 'Retry' ) {
+                removeItem('python');
+                setRandomPosition('python');
+            }
+        };
+
+        var removeItem = function(e) {
+            var pythonTileId = getCurrentPosition(e);
+            $('#'+pythonTileId+' img').remove();
+        };
+
+        var setRandomPosition = function(e){
+            var p=q=0;
+            var tileId='';
+            if (e === 'python') {
+
+                p = Math.floor(Math.random() * 9  + 1);
+                q = Math.floor(Math.random() * 9  + 1);
+
+                tileId = p.toString() + q.toString();
+                $('#'+tileId).prepend("<img src='python.png' height=45 width=45>");
+            }
+
+            if (e === 'ruby') {
+                var m = n = 0;
+
+                var PythonCurrentPosition = getCurrentPosition('python');
+
+                p = parseInt(PythonCurrentPosition.substring(0,1));
+                q = parseInt(PythonCurrentPosition.substring(1,2));
+                console.log('p: ' + p + ' and q: ' + q);
+                (p < 5) ? (m = Math.floor(Math.random() * (9-5)+1) + 5) : (m = Math.floor(Math.random() * 5+1));
+                (q < 5) ? (n = Math.floor(Math.random() * (9-5)+1) + 5) : (n = Math.floor(Math.random() * 5+1));
+
+                tileId = m.toString() + n.toString();
+                $('#'+tileId).prepend("<img src='ruby.png' height=45 width=45>");
+            }
+        };
+
+        var getCurrentPosition = function(e) {
+            if (e === 'python'){
+                var x = $("img[src$='python.png']").parent();
+            }
+            else if (e === 'ruby') {
+                var x = $("img[src$='ruby.png']").parent();
+            }
+            return x.attr('id');
+        };
+
+        var counter = 0;
+        var arrowKeyLocked = false;
+        $(document).keyup(function(e) {
+            if (!arrowKeyLocked) {
+                var PythonCurrentPosition = getCurrentPosition('python');
+
+                var i = PythonCurrentPosition.substring(0,1);
+                var j = PythonCurrentPosition.substring(1,2);
+
+                var pythonTileId;
+
+                if(e.which === 38 && !arrowKeyLocked){
+                    if ( i > 0){
+                        pythonTileId = i.toString() + j.toString();
+                        $('#'+pythonTileId+' img').remove();
+                        i--;
+                        counter ++;
+                        pythonTileId = i.toString() + j.toString();
+                        $('#'+pythonTileId).prepend("<img src='python.png' height=45 width=45>");
+                    }
+                }
+                if(e.which === 40 && !arrowKeyLocked){
+                    if ( i < 9){
+                        pythonTileId = i.toString() + j.toString();
+                        $('#'+pythonTileId+' img').remove();
+                        i++;
+                        counter ++;
+                        pythonTileId = i.toString() + j.toString();
+                        $('#'+pythonTileId).prepend("<img src='python.png' height=45 width=45>");
+                    }
+                }
+                if(e.which === 37 && !arrowKeyLocked){
+                    if ( j > 0){
+                        pythonTileId = i.toString() + j.toString();
+                        $('#'+pythonTileId+' img').remove();
+                        j--;
+                        counter ++;
+                        pythonTileId = i.toString() + j.toString();
+                        $('#'+pythonTileId).prepend("<img src='python.png' height=45 width=45>");
+                    }
+                }
+                if(e.which === 39 && !arrowKeyLocked){
+                    if ( j < 9) {
+                        pythonTileId = i.toString() + j.toString();
+                        $('#' + pythonTileId + ' img').remove();
+                        j++;
+                        counter++;
+                        pythonTileId = i.toString() + j.toString();
+                        $('#' + pythonTileId).prepend("<img src='python.png' height=45 width=45>");
+                    }
+                }
+                $('#displayCounter').text('Total movement is :' + counter);
+
+                setTimeout(showMessage, 1);
+                function showMessage(){
+                    if (pythonTileId === getCurrentPosition('ruby')){
+                        $('#'+pythonTileId+' img').remove();
+
+                        $('#'+pythonTileId).prepend("<img src='pythonWin.png' height=45 width=45>");
+
+
+                        $('.message').css({'font-size':'30px', 'color':'blue'});
+                        $('.message').text('Good job!');
+                        arrowKeyLocked = true;
+                        $('#start_game').hide();
+                        $('#start_over').show();
+                    }
+                }
+            }
+        });
+
+        var gameStart = function(){
+            render();
+            setRandomPosition('ruby');
+            $('#start_game').prop('disabled', true);
+
+            setTimeout(timeToPlay, 5000);
+            function timeToPlay(){
+                if (!arrowKeyLocked){
+                    pythonTileId = getCurrentPosition('python');
+                    removeItem('python');
+                    $('#'+pythonTileId).prepend("<img src='pythonLose.png' height=45 width=45>").show('slow');
+
+                    $('.message').css({'font-size':'30px', 'color':'red'});
+                    $('.message').text('Game Over!');
+                    $('#start_game').prop('disabled', false);
+                    $('#start_game').html('Retry');
+                    arrowKeyLocked = true;
+                }
+            }
+        };
+        gameStart();
+    });
+
+    $('#start_over').on('click', function(){
+        location.reload();
+    });
+
+    $('#close_window').on('click', function () {
+        window.close();
+    });
+
+});
+
+
+//Your code here. Good luck!
+</script>
